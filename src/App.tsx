@@ -22,6 +22,7 @@ interface Project {
 }
 
 export default function PortfolioPage() {
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('chat_history');
@@ -211,11 +212,11 @@ ${resumeContent}`,
   ];
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white p-4 md:p-8 font-sans selection:bg-blue-500/30">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <main className="min-h-screen bg-slate-950 text-white p-4 md:p-8 font-sans selection:bg-blue-500/30 overflow-x-hidden">
+      <div className="max-w-5xl mx-auto space-y-6 pb-24">
         
-        {/* Left Column: Profile & Info */}
-        <div className="lg:col-span-3 space-y-6">
+        {/* Profile & Info */}
+        <div className="space-y-6">
           
           {/* Header Card */}
           <motion.div 
@@ -373,98 +374,160 @@ ${resumeContent}`,
             ))}
           </div>
         </div>
+      </div>
 
-        {/* Right Column: AI Chat */}
-        <div className="lg:col-span-1">
-          <motion.div 
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="bg-slate-900/50 backdrop-blur-lg border border-slate-800 p-6 rounded-3xl flex flex-col sticky top-8 h-[calc(100vh-4rem)]"
-          >
-            <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              AI 数字替身
-            </h3>
-            
-            <div 
-              ref={scrollRef}
-              className="flex-grow space-y-4 mb-4 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent"
+      {/* Floating AI Chat Container */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4">
+        <AnimatePresence>
+          {isChatOpen && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20, transformOrigin: 'bottom right' }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-slate-900/90 backdrop-blur-xl border border-slate-800 p-6 rounded-3xl flex flex-col w-[90vw] md:w-[400px] h-[60vh] md:h-[600px] shadow-2xl"
             >
-              <AnimatePresence initial={false}>
-                {messages.map((msg, idx) => (
-                  <motion.div
-                    key={idx}
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    className={`flex items-end gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    {msg.role === 'model' && (
-                      <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-slate-700 mb-1">
-                        <img 
-                          src="https://images.unsplash.com/photo-1518806118471-f28b20a1d79d?auto=format&fit=crop&q=80&w=400&h=400" 
-                          alt="AI Avatar" 
-                          className="w-full h-full object-cover"
-                          referrerPolicy="no-referrer"
-                        />
-                      </div>
-                    )}
-                    <div className={`
-                      p-3 rounded-2xl text-sm max-w-[85%] break-words
-                      ${msg.role === 'user' 
-                        ? 'bg-blue-600/20 text-blue-100 border border-blue-500/30 rounded-tr-none' 
-                        : 'bg-slate-800/50 text-slate-300 border border-slate-700/50 rounded-tl-none'}
-                    `}>
-                      {msg.text}
-                      {msg.isTyping && <span className="inline-block w-1 h-4 ml-1 bg-blue-400 animate-pulse align-middle" />}
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-              {isLoading && !messages[messages.length - 1]?.isTyping && (
-                <div className="flex justify-start">
-                  <div className="bg-slate-800/50 p-3 rounded-2xl rounded-tl-none border border-slate-700/50">
-                    <Loader2 size={16} className="animate-spin text-slate-400" />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Suggested Questions */}
-            <div className="mb-4">
-              <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-2 px-1">你可以问我：</p>
-              <div className="flex flex-wrap gap-2">
-                {suggestedQuestions.map((q, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleSendMessage(q)}
-                    disabled={isLoading}
-                    className="text-[10px] md:text-xs bg-slate-800/80 hover:bg-blue-600/30 border border-slate-700 hover:border-blue-500/50 text-slate-400 hover:text-blue-200 px-2 py-1 rounded-full transition-all whitespace-nowrap"
-                  >
-                    {q}
-                  </button>
-                ))}
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  AI 数字替身
+                </h3>
+                <button 
+                  onClick={() => setIsChatOpen(false)}
+                  className="p-1.5 hover:bg-slate-800 rounded-full text-slate-500 hover:text-white transition-colors"
+                >
+                  <X size={18} />
+                </button>
               </div>
-            </div>
-
-            <div className="relative mt-auto">
-              <input 
-                type="text" 
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder="面试官，请提问..." 
-                className="w-full bg-slate-950/50 border border-slate-700 rounded-xl py-3 px-4 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-slate-600"
-              />
-              <button 
-                onClick={() => handleSendMessage()}
-                disabled={isLoading}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 rounded-lg transition-colors"
+              
+              <div 
+                ref={scrollRef}
+                className="flex-grow space-y-4 mb-4 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent"
               >
-                <Send size={16} />
-              </button>
+                <AnimatePresence initial={false}>
+                  {messages.map((msg, idx) => (
+                    <motion.div
+                      key={idx}
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      className={`flex items-end gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      {msg.role === 'model' && (
+                        <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-slate-700 mb-1">
+                          <img 
+                            src="https://images.unsplash.com/photo-1518806118471-f28b20a1d79d?auto=format&fit=crop&q=80&w=400&h=400" 
+                            alt="AI Avatar" 
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
+                      )}
+                      <div className={`
+                        p-3 rounded-2xl text-sm max-w-[85%] break-words
+                        ${msg.role === 'user' 
+                          ? 'bg-blue-600/20 text-blue-100 border border-blue-500/30 rounded-tr-none' 
+                          : 'bg-slate-800/50 text-slate-300 border border-slate-700/50 rounded-tl-none'}
+                      `}>
+                        {msg.text}
+                        {msg.isTyping && <span className="inline-block w-1 h-4 ml-1 bg-blue-400 animate-pulse align-middle" />}
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+                {isLoading && !messages[messages.length - 1]?.isTyping && (
+                  <div className="flex justify-start">
+                    <div className="bg-slate-800/50 p-3 rounded-2xl rounded-tl-none border border-slate-700/50">
+                      <Loader2 size={16} className="animate-spin text-slate-400" />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Suggested Questions */}
+              <div className="mb-4">
+                <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-2 px-1">你可以问我：</p>
+                <div className="flex flex-wrap gap-2">
+                  {suggestedQuestions.map((q, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handleSendMessage(q)}
+                      disabled={isLoading}
+                      className="text-[10px] bg-slate-800/80 hover:bg-blue-600/30 border border-slate-700 hover:border-blue-500/50 text-slate-400 hover:text-blue-200 px-2 py-1 rounded-full transition-all whitespace-nowrap"
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="relative mt-auto">
+                <input 
+                  type="text" 
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                  placeholder="面试官，请提问..." 
+                  className="w-full bg-slate-950/50 border border-slate-700 rounded-xl py-3 px-4 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-slate-600"
+                />
+                <button 
+                  onClick={() => handleSendMessage()}
+                  disabled={isLoading}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 rounded-lg transition-colors"
+                >
+                  <Send size={16} />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Floating Entry Button */}
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setIsChatOpen(!isChatOpen)}
+          className="relative group"
+        >
+          {/* Golden Pulse Effect */}
+          {!isChatOpen && (
+            <motion.div 
+              animate={{ 
+                scale: [1, 1.2, 1],
+                opacity: [0.5, 0, 0.5]
+              }}
+              transition={{ 
+                duration: 2, 
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              className="absolute inset-0 rounded-full bg-yellow-500/30 blur-md"
+            />
+          )}
+          
+          <div className={`
+            relative w-16 h-16 rounded-full overflow-hidden border-2 transition-all duration-300
+            ${isChatOpen ? 'border-slate-700 rotate-90' : 'border-yellow-500 shadow-[0_0_20px_rgba(234,179,8,0.4)]'}
+          `}>
+            {isChatOpen ? (
+              <div className="w-full h-full bg-slate-900 flex items-center justify-center">
+                <X size={24} className="text-white -rotate-90" />
+              </div>
+            ) : (
+              <img 
+                src="https://images.unsplash.com/photo-1518806118471-f28b20a1d79d?auto=format&fit=crop&q=80&w=400&h=400" 
+                alt="AI Agent" 
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+            )}
+          </div>
+
+          {/* Tooltip */}
+          {!isChatOpen && (
+            <div className="absolute right-full mr-4 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-300 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+              点击与我的 AI 数字替身对话 ✨
             </div>
-          </motion.div>
-        </div>
+          )}
+        </motion.button>
       </div>
 
       {/* Project Detail Modal */}
